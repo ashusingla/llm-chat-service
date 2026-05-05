@@ -1,0 +1,28 @@
+<!DOCTYPE html>                                                                                                                                                                                           
+  <html><head><title>LLM Chat Demo</title></head><body>                                                                                                                                                     
+  <h2>LLM Chat (SSE streaming)</h2>
+  <input id="msg" style="width:60%" placeholder="say something">                                                                                                                                            
+  <button onclick="send()">Send</button>                                                                                                                                                                    
+  <pre id="out"></pre>                                                                                                                                                                                      
+  <script>                                                                                                                                                                                                  
+  async function send() {
+    const out = document.getElementById('out');
+    out.textContent = '';                                                                                                                                                                                   
+    const r = await fetch('/api/chat/stream', {
+      method: 'POST',                                                                                                                                                                                       
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: 'demo', prompt: document.getElementById('msg').value })                                                                                                             
+    });
+    const reader = r.body.getReader();                                                                                                                                                                      
+    const decoder = new TextDecoder();                                                                                                                                                                      
+    while (true) {
+      const { value, done } = await reader.read();                                                                                                                                                          
+      if (done) break;
+      decoder.decode(value).split('\n\n').forEach(line => {                                                                                                                                                 
+        if (line.startsWith('data: ')) {
+          try { out.textContent += JSON.parse(line.slice(6)).chunk || ''; } catch {}                                                                                                                        
+        }                                                                                                                                                                                                   
+      });                                                                                                                                                                                                   
+    }                                                                                                                                                                                                       
+  }               
+  </script></body></html>
